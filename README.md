@@ -1,2 +1,7 @@
 # node-disconf-client
-A nodejs lib to connect disconf service.
+
+A Javascript module for
+[Node.js](http://nodejs.org)
+to connect
+[Disconf](https://github.com/knightliao/disconf)
+service.
