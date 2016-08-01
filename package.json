@@ -1,0 +1,38 @@
+{
+  "name": "node-disconf-client",
+  "version": "0.0.1",
+  "description": "A Javascript module for Node.js to connect Disconf service.",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha --colors test/*.js",
+    "coverage": "cat ./coverage/lcov.info | coveralls"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Corey600/node-disconf-client.git"
+  },
+  "keywords": [
+    "nodejs",
+    "config",
+    "disconf",
+    "zookeeper"
+  ],
+  "author": "Corey600",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Corey600/node-disconf-client/issues"
+  },
+  "homepage": "https://github.com/Corey600/node-disconf-client#readme",
+  "dependencies": {
+    "config": "^1.21.0",
+    "node-zookeeper-client": "^0.2.2",
+    "properties": "^1.2.1"
+  },
+  "devDependencies": {
+    "coveralls": "^2.11.9",
+    "expect.js": "^0.3.1",
+    "istanbul": "^0.4.3",
+    "mm": "^1.5.0",
+    "mocha": "^2.5.3"
+  }
+}
