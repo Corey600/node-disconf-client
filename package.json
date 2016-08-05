@@ -24,11 +24,14 @@
   },
   "homepage": "https://github.com/Corey600/node-disconf-client#readme",
   "dependencies": {
-    "config": "^1.21.0",
+    "debug": "^2.2.0",
+    "lodash": "^4.14.1",
     "node-zookeeper-client": "^0.2.2",
-    "properties": "^1.2.1"
+    "properties": "^1.2.1",
+    "request": "^2.74.0"
   },
   "devDependencies": {
+    "config": "^1.21.0",
     "coveralls": "^2.11.9",
     "expect.js": "^0.3.1",
     "istanbul": "^0.4.3",
