@@ -15,6 +15,7 @@ var properties = require('properties');
 
 var HttpClient = require('./lib/HttpClient');
 var ConfNode = require('./lib/ConfNode');
+var write = require('./lib/utils/write');
 var log = require('./lib/utils/log')('index');
 
 /**
@@ -61,23 +62,23 @@ function DisconfClient() {
         // 获取的配置写入的目标文件路径
         dist_file: path.join(defaultPath, 'remote.properties'),
 
-        // 需要远程获取的配置文件，用逗号分隔
-        conf_file_name: 'demo.properties,system.properties',
+        // 需要远程获取的配置文件，用逗号分隔 test,demo.properties,system.properties
+        conf_file_name: '',
 
-        // 需要远程获取的配置项，用逗号分隔
-        conf_item_name: 'node_demo',
+        // 需要远程获取的配置项，用逗号分隔 test,demo.properties,system.properties
+        conf_item_name: '',
 
         /*----- 以下配置同java客户端一致 -----*/
 
         // 是否使用远程配置文件
         // true(默认)会从远程获取配置 false则直接获取本地配置
-        enable_remote: false,
+        enable: {remote: {conf: true}},
 
-        // 配置服务器的 HOST,用逗号分隔  127.0.0.1:8000,127.0.0.1:8000
+        // 配置服务器的 HOST,用逗号分隔 127.0.0.1:8000,127.0.0.1:8000
         conf_server_host: '',
 
         // APP 请采用 产品线_服务名 格式
-        app: '',
+        app: 'DEFAULT_APP',
 
         // 版本, 请采用 X_X_X_X 格式
         version: 'DEFAULT_VERSION',
@@ -89,7 +90,7 @@ function DisconfClient() {
         debug: true,
 
         // 忽略哪些分布式配置，用逗号分隔
-        ignore: 'demo.properties',
+        ignore: '',
 
         // 获取远程配置 重试次数，默认是3次
         conf_server_url_retry_times: 3,
@@ -119,7 +120,7 @@ DisconfClient.prototype.init = function (file, option, cb) {
     this._file = _.defaults(file, this._file);
 
     var _path = path.join(file.path, file.name);
-    log.info('The DisconfClient\'s option file path: ' + _path);
+    log.info('the DisconfClient\'s option file path: ' + _path);
 
     // If the DisconfClient\'s option file is exist.
     fs.access(_path, fs.F_OK, function (err) {
@@ -211,7 +212,7 @@ DisconfClient.prototype.initConfigNodes = function (prefix) {
             var _data = _.cloneDeep(data);
             _.defaultsDeep(_data, allConfig);
             allConfig = _data;
-            fs.writeFile(self._option.dist_file, properties.stringify(_data), function (err) {
+            write(self._option.dist_file, properties.stringify(_data), function (err) {
                 if (err) return self.emit('err', err);
                 self.emit('change', event, { key: node.name, data: data });
             });
@@ -222,7 +223,7 @@ DisconfClient.prototype.initConfigNodes = function (prefix) {
             _.defaultsDeep(_data, allConfig);
             allConfig = _data;
             if (readyNum >= nodeList.length) {
-                fs.writeFile(self._option.dist_file, properties.stringify(_data), function (err) {
+                write(self._option.dist_file, properties.stringify(_data), function (err) {
                     if (err) return self.emit('err', err);
                     self.emit('ready', _data);
                 });
