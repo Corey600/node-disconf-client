@@ -153,9 +153,9 @@ DisconfClient.prototype.init = function (file, option, callback) {
             // Read DisconfClient\'s option file.
             fs.readFile(_path, function (err, data) {
                 if (err) return callback(err);
-                try{
+                try {
                     data = properties.parse(data.toString(), {namespaces: true, variables: true, sections: true});
-                }catch (e){
+                } catch (e) {
                     return callback(e);
                 }
                 self._option = _.defaults(option, data, self._option);
@@ -193,7 +193,13 @@ DisconfClient.prototype._getZkInfo = function (callback) {
                 retries: ZK_RETRIES
             });
             zk.connect();
-            self._initConfigNodes(prefix);
+            if (self._option.enable.remote.conf) {
+                // 远程配置开启
+                self._initConfigNodes(prefix);
+            } else {
+                // 远程配置关闭，直接准备事件
+                self.emit('ready', null);
+            }
             callback(null, zk);
         } catch (e) {
             callback(e);
@@ -244,7 +250,7 @@ DisconfClient.prototype._initConfigNodes = function (prefix) {
     nodeList.forEach(function (node) {
         node.nodeWatch(function (err, event, data) {
             // 监听
-            if(err){
+            if (err) {
                 log.error('zookeeper watch event error. event: %s, error: %', event.name, err.stack);
                 self.emit('error', err);
                 return;
@@ -254,7 +260,7 @@ DisconfClient.prototype._initConfigNodes = function (prefix) {
                 if (err) {
                     log.error('write all config error. event: %s, error: %', event.name, err.stack);
                     self.emit('error', err);
-                }else{
+                } else {
                     self.emit('change', event, {key: node.getKey(), data: data});
                 }
             });
@@ -270,7 +276,7 @@ DisconfClient.prototype._initConfigNodes = function (prefix) {
                 write(self._option.dist_file, properties.stringify(allConfig), function (err) {
                     if (err) {
                         self.emit('error', err);
-                    }else{
+                    } else {
                         self.emit('ready', allConfig);
                     }
                 });
