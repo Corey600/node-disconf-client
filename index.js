@@ -5,7 +5,7 @@
 'use strict';
 
 var fs = require('fs');
-var path = require('path');
+var sysPath = require('path');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
@@ -46,21 +46,29 @@ var ZK_RETRIES = 3;
  * @constructor
  */
 function DisconfClient() {
-    var defaultPath = path.join(process.cwd(), 'config');
+    var defaultPath = sysPath.join(process.cwd(), 'config');
 
-    // 客户端配置文件路径，文件内容为 this._option 的配置内容
+    /**
+     * 客户端配置文件路径，文件内容为 this._option 的配置内容
+     * @type {{path, name: string}}
+     * @private
+     */
     this._file = {
         path: defaultPath,
         name: 'disconf.properties'
     };
 
-    // 客户端配置默认值
+    /**
+     * 客户端配置默认值
+     * @type {*}
+     * @private
+     */
     this._option = {
 
         /*----- 区别java客户端特有的配置 -----*/
 
         // 获取的配置写入的目标文件路径
-        dist_file: path.join(defaultPath, 'remote.properties'),
+        dist_file: sysPath.join(defaultPath, 'remote.properties'),
 
         // 需要远程获取的配置文件，用逗号分隔 test,demo.properties,system.properties
         conf_file_name: '',
@@ -87,7 +95,7 @@ function DisconfClient() {
         env: 'DEFAULT_ENV',
 
         // debug
-        debug: true,
+        debug: false,
 
         // 忽略哪些分布式配置，用逗号分隔
         ignore: '',
@@ -99,8 +107,22 @@ function DisconfClient() {
         conf_server_url_retry_sleep_seconds: 5,
 
         // 用户定义的下载文件夹, 远程文件下载后会放在这里。注意，此文件夹必须有有权限，否则无法下载到这里
-        user_define_download_dir: path.join(defaultPath, 'download')
+        user_define_download_dir: sysPath.join(defaultPath, 'download')
     };
+
+    /**
+     * http 客户端实例
+     * @type {HttpClient|null}
+     * @private
+     */
+    this._http = null;
+
+    /**
+     * zookeeper 客户端实例
+     * @type {*|null}
+     * @private
+     */
+    this._zk = null;
 }
 
 util.inherits(DisconfClient, EventEmitter);
@@ -108,66 +130,76 @@ util.inherits(DisconfClient, EventEmitter);
 /**
  * Initialize the instance.
  *
- * @param file
- * @param option
- * @param cb
+ * @param {{path: string, name: string}} file
+ * @param {*} option
+ * @param {Function} callback
+ * @returns {DisconfClient}
+ * @public
  */
-DisconfClient.prototype.init = function (file, option, cb) {
+DisconfClient.prototype.init = function (file, option, callback) {
     var self = this;
-    if (!cb || !_.isFunction(cb)) cb = function () {
+    if (!callback || !_.isFunction(callback)) callback = function () {
     };
     file = file || {};
     this._file = _.defaults(file, this._file);
 
-    var _path = path.join(file.path, file.name);
+    var _path = sysPath.join(file.path, file.name);
     log.info('the DisconfClient\'s option file path: ' + _path);
 
+    option = option || {};
     // If the DisconfClient\'s option file is exist.
     fs.access(_path, fs.F_OK, function (err) {
         if (!err) {
             // Read DisconfClient\'s option file.
             fs.readFile(_path, function (err, data) {
-                if (err) return cb(err);
-                data = properties.parse(data.toString(), {namespaces: true, variables: true, sections: true});
-                option = option || {};
+                if (err) return callback(err);
+                try{
+                    data = properties.parse(data.toString(), {namespaces: true, variables: true, sections: true});
+                }catch (e){
+                    return callback(e);
+                }
                 self._option = _.defaults(option, data, self._option);
-                log.info('the DisconfClient\'s option content: ' + JSON.stringify(option));
-                self.getZkInfo(cb);
+                log.info('the DisconfClient\'s option content: ' + JSON.stringify(self._option));
+                self._getZkInfo(callback);
             });
         } else {
             log.warn('the DisconfClient\'s option file is not exist. err: ', err.stack);
-            self.getZkInfo(cb);
+            self._option = _.defaults(option, self._option);
+            log.info('the DisconfClient\'s option content: ' + JSON.stringify(self._option));
+            self._getZkInfo(callback);
         }
+
     });
+    return this;
 };
 
 /**
  * Get zookeeper server info.
  *
- * @param cb
+ * @param {Function} callback
+ * @returns {DisconfClient}
+ * @private
  */
-DisconfClient.prototype.getZkInfo = function (cb) {
+DisconfClient.prototype._getZkInfo = function (callback) {
     var self = this;
     var http = self._http = new HttpClient(self._option);
     http.getZkInfo(function (err, host, prefix) {
-        if (err) {
-            cb(err);
-        } else {
-            try {
-                log.info('zk host: %s, prefix: %s', host, prefix);
-                var zk = self._zk = zookeeper.createClient(host, {
-                    sessionTimeout: ZK_SESSION_TIMEOUT,
-                    spinDelay: ZK_SPIN_DELAY,
-                    retries: ZK_RETRIES
-                });
-                zk.connect();
-                self.initConfigNodes(prefix);
-                cb(null, zk);
-            } catch (err) {
-                cb(err);
-            }
+        if (err) return callback(err);
+        try {
+            log.info('zk host: %s, prefix: %s', host, prefix);
+            var zk = self._zk = zookeeper.createClient(host, {
+                sessionTimeout: ZK_SESSION_TIMEOUT,
+                spinDelay: ZK_SPIN_DELAY,
+                retries: ZK_RETRIES
+            });
+            zk.connect();
+            self._initConfigNodes(prefix);
+            callback(null, zk);
+        } catch (e) {
+            callback(e);
         }
     });
+    return this;
 };
 
 /**
@@ -175,18 +207,20 @@ DisconfClient.prototype.getZkInfo = function (cb) {
  *
  * @param {string} prefix
  * @returns {DisconfClient}
+ * @private
  */
-DisconfClient.prototype.initConfigNodes = function (prefix) {
+DisconfClient.prototype._initConfigNodes = function (prefix) {
     var self = this;
 
     // get the ignore config list
     var ignores = self._option.ignore;
-    if (!_.isNil(ignores) || _.isString(ignores)) {
+    if (!_.isNil(ignores) && _.isString(ignores)) {
         ignores = ignores.split(',');
     } else {
         ignores = [];
     }
 
+    // get ConfNode list
     var nodeList = [];
     var types = ['file', 'item'];
     types.forEach(function (type) {
@@ -204,39 +238,54 @@ DisconfClient.prototype.initConfigNodes = function (prefix) {
         });
     });
 
+    // watch every node
     var readyNum = 0;
     var allConfig = {};
     nodeList.forEach(function (node) {
-        node.nodeWatch(function (event, data) {
-            log.info('zookeeper event: ', event, data);
-            var _data = _.cloneDeep(data);
-            _.defaultsDeep(_data, allConfig);
-            allConfig = _data;
-            write(self._option.dist_file, properties.stringify(_data), function (err) {
-                if (err) return self.emit('err', err);
-                self.emit('change', event, { key: node.name, data: data });
+        node.nodeWatch(function (err, event, data) {
+            // 监听
+            if(err){
+                log.error('zookeeper watch event error. event: %s, error: %', event.name, err.stack);
+                self.emit('error', err);
+                return;
+            }
+            allConfig = _.defaultsDeep(data, allConfig);
+            write(self._option.dist_file, properties.stringify(allConfig), function (err) {
+                if (err) {
+                    log.error('write all config error. event: %s, error: %', event.name, err.stack);
+                    self.emit('error', err);
+                }else{
+                    self.emit('change', event, {key: node.getKey(), data: data});
+                }
             });
         }, function (err, data) {
+            // 回调
             readyNum++;
-            if (err) return self.emit('error', err);
-            var _data = _.cloneDeep(data);
-            _.defaultsDeep(_data, allConfig);
-            allConfig = _data;
+            if (err) {
+                self.emit('error', err);
+                return;
+            }
+            allConfig = _.defaultsDeep(data, allConfig);
             if (readyNum >= nodeList.length) {
-                write(self._option.dist_file, properties.stringify(_data), function (err) {
-                    if (err) return self.emit('err', err);
-                    self.emit('ready', _data);
+                write(self._option.dist_file, properties.stringify(allConfig), function (err) {
+                    if (err) {
+                        self.emit('error', err);
+                    }else{
+                        self.emit('ready', allConfig);
+                    }
                 });
             }
         });
     });
-
-    return self;
+    return this;
 };
 
 
 /**
  * Utilities are under the util namespace.
+ *
+ * @type {*}
+ * @public
  */
 var _util = DisconfClient.prototype.util = {};
 
@@ -244,6 +293,7 @@ var _util = DisconfClient.prototype.util = {};
  * Reload 'config' module.
  *
  * @returns {Config}
+ * @public
  */
 _util.reloadConfig = function () {
     var config = require('config');

@@ -30,21 +30,21 @@ disconf.init({
 
 // 错误事件
 disconf.on('error', function (err) {
-    console.log('error ', err.stack);
+    console.log('error:', err.stack);
 });
 
 // 准备事件，此时重新加载config模块，使配置生效
 disconf.on('ready', function (data) {
-    console.log('ready ', data);
+    console.log('ready:', data);
     var conf = disconf.util.reloadConfig();
-    console.log(conf);
+    console.log('conf:', conf);
 });
 
 // 配置在远程被修改，此时重新加载config模块，使配置生效
-disconf.on('change', function (event) {
-    console.log('change ', event);
+disconf.on('change', function (event, data) {
+    console.log('change:', event.name, data);
     var conf = disconf.util.reloadConfig();
-    console.log(conf);
+    console.log('conf:', conf);
 });
 ```
 
