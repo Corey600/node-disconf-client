@@ -1,5 +1,11 @@
 # node-disconf-client
 
+[![Build Status](https://api.travis-ci.org/Corey600/node-disconf-client.svg)](http://travis-ci.org/Corey600/node-disconf-client)
+[![Coverage Status](https://coveralls.io/repos/github/Corey600/node-disconf-client/badge.svg)](https://coveralls.io/github/Corey600/node-disconf-client)
+[![NPM Downloads](https://img.shields.io/npm/dm/node-disconf-client.svg?style=flat)](https://www.npmjs.org/package/node-disconf-client)
+[![NPM Version](http://img.shields.io/npm/v/node-disconf-client.svg?style=flat)](https://www.npmjs.org/package/node-disconf-client)
+[![License](https://img.shields.io/npm/l/node-disconf-client.svg?style=flat)](https://www.npmjs.org/package/node-disconf-client)
+
 A Javascript module for
 [Node.js](http://nodejs.org)
 to connect
