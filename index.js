@@ -168,7 +168,6 @@ DisconfClient.prototype.init = function (file, option, callback) {
             log.info('the DisconfClient\'s option content: ' + JSON.stringify(self._option));
             self._getZkInfo(callback);
         }
-
     });
     return this;
 };
