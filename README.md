@@ -123,7 +123,7 @@ disconf.init({
 ### Event
 
 Optionally, you can register watcher functions after calling
-[`init`](#disconfinitfile-option-callback) methods.
+[`init`](#initfile-option-callback) methods.
 
 #### `ready`
 
