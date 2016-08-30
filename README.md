@@ -210,6 +210,7 @@ var conf = disconf.util.reloadConfig();
 
 ### Issue
 
+- [x] 解决监听节点时，监听只被触发一次的问题
 - [ ] 配置项是中文，校验失败
 
 ## License
