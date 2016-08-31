@@ -211,6 +211,7 @@ var conf = disconf.util.reloadConfig();
 ### Issue
 
 - [x] 解决监听节点时，监听只被触发一次的问题
+- [x] 解决properties配置字段设置为空字符串会解析为null，导致push校验错误的问题
 - [ ] 配置项是中文，校验失败
 
 ## License
