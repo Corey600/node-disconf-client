@@ -1,6 +1,6 @@
 {
   "name": "node-disconf-client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A Javascript module for Node.js to connect Disconf service.",
   "main": "index.js",
   "scripts": {
