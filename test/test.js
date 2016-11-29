@@ -25,7 +25,7 @@ var MyRequest = require('./lib/request');
 var rootDir = sysPath.dirname(sysPath.dirname(__filename));
 
 // set env
-const NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR = sysPath.join(rootDir, 'test/config');
+var NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR = sysPath.join(rootDir, 'test/config');
 
 // config dir of disconf
 var configDir = sysPath.join(rootDir, 'config');
