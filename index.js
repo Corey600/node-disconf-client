@@ -147,6 +147,21 @@ DisconfClient.prototype.init = function (file, option, callback) {
     log.info('the DisconfClient\'s option file path: ' + _path);
 
     option = option || {};
+    // If the DisconfClient\'s option file can be required.
+    var extname = sysPath.extname(_path);
+    if('.js' === extname || '.json' === extname){
+        var data = {};
+        try {
+            data = require(_path);
+        }catch (e){
+            log.warn('the DisconfClient\'s option file is not exist. err: ', e.stack);
+        }
+        // file has the highest priority
+        self._option = _.defaults(data, option, self._option);
+        log.info('the DisconfClient\'s option content: ' + JSON.stringify(self._option));
+        self._getZkInfo(callback);
+        return this;
+    }
     // If the DisconfClient\'s option file is exist.
     fs.access(_path, fs.F_OK, function (err) {
         if (!err) {
@@ -158,7 +173,8 @@ DisconfClient.prototype.init = function (file, option, callback) {
                 } catch (e) {
                     return callback(e);
                 }
-                self._option = _.defaults(option, data, self._option);
+                // file has the highest priority
+                self._option = _.defaults(data, option, self._option);
                 log.info('the DisconfClient\'s option content: ' + JSON.stringify(self._option));
                 self._getZkInfo(callback);
             });
@@ -230,14 +246,13 @@ DisconfClient.prototype._initConfigNodes = function (prefix) {
     var types = ['file', 'item'];
     types.forEach(function (type) {
         var names = self._option['conf_' + type + '_name'];
-        if (_.isNil(names) || !_.isString(names)) {
+        if (_.isString(names)) {
+            names = names.split(',');
+        }
+        if (!_.isArray(names) || names.length <= 0) {
             return;
         }
-        var list = names.split(',');
-        if (list.length <= 0) {
-            return;
-        }
-        list.forEach(function (name) {
+        names.forEach(function (name) {
             if (name == '' || ignores.indexOf(name) >= 0) return;
             nodeList.push(new ConfNode(type, name, prefix, self));
         });

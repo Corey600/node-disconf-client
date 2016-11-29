@@ -12,15 +12,35 @@ var os = require('os');
 var sysPath = require('path');
 
 // require thirdpart modules
-var config = require('config');
+var zookeeper = require('node-zookeeper-client');
+var request = require('request');
 var expect = require('expect.js');
+var mm = require('mm');
+
+// require custom modules
+var MyZookeeper = require('./lib/zookeeper');
+var MyRequest = require('./lib/request');
+
+// root dir
+var rootDir = sysPath.dirname(sysPath.dirname(__filename));
+
+// set env
+const NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR = sysPath.join(rootDir, 'test/config');
+
+// config dir of disconf
+var configDir = sysPath.join(rootDir, 'config');
 
 describe('test', function () {
     beforeEach(function (done) {
+        mm(request, 'Request', MyRequest);
+        mm(zookeeper, 'createClient', function(conn, opt){
+            return new MyZookeeper(conn, opt);
+        });
         done();
     });
 
     afterEach(function (done) {
+        mm.restore();
         done();
     });
 
@@ -35,27 +55,26 @@ describe('test', function () {
         });
 
         it('excute success', function (done) {
-            process.env.NODE_CONFIG_DIR = './test/config';
-            //noinspection JSCheckFunctionSignatures
-            var configDir = (disconf.util.reloadConfig()).util.getEnv('NODE_CONFIG_DIR');
-            //noinspection JSCheckFunctionSignatures
             disconf.init({
                 path: configDir,
-                filename: 'disconf.properties'
+                name: 'disconf.properties'
             }, {
-                dist_file: sysPath.join(configDir, os.hostname() + '.properties'),
-                user_define_download_dir: sysPath.join(configDir, 'download'),
-                conf_file_name: '',
-                conf_item_name: '',
-                conf_server_host: '',
-                app: 'DEFAULT_APP',
-                version: 'DEFAULT_VERSION',
-                env: 'DEFAULT_ENV',
-                conf_server_url_retry_times: 0,
-                conf_server_url_retry_sleep_seconds: 0
+                dist_file: sysPath.join(NODE_CONFIG_DIR, os.hostname() + '.properties'),
+                user_define_download_dir: sysPath.join(NODE_CONFIG_DIR, 'download')
             }, function (err, zk) {
-                expect(err).not.to.be(null);
-                expect(zk).to.be(undefined);
+                expect(Boolean(err)).to.be(false);
+                expect(zk).not.to.be(undefined);
+            });
+
+            disconf.on('error', function (err) {
+                expect(Boolean(err)).not.to.be(false);
+                done();
+            });
+
+            disconf.on('ready', function (data) {
+                var conf = disconf.util.reloadConfig();
+                expect(data).not.to.be(null);
+                expect(conf).not.to.be(null);
                 done();
             });
         });
