@@ -23,10 +23,20 @@ function Request(options) {
                     statusCode: 200
                 }, 'name=demo\nversion=v1.0.0\n');
                 break;
+            case 'test.json':
+                callback(false, {
+                    statusCode: 200
+                }, '{\r\n  "a": 1,\r\n  "b": 2\t\n}');
+                break;
             case 'test':
                 callback(false, {
                     statusCode: 200
-                }, 'hello');
+                }, { message: '', status: 1, value: 'hello' });
+                break;
+            case 'item':
+                callback(false, {
+                    statusCode: 200
+                }, { message: '', status: 1, value: 'helloworld' });
                 break;
             default:
                 callback(new Error('config key is error!'));
@@ -57,7 +67,7 @@ function Request(options) {
             returnConf(data.query.key);
             break;
         case '/api/config/item':
-            returnConf(data.key);
+            returnConf(data.query.key);
             break;
         default:
             callback(new Error('uri is error!'));

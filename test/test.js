@@ -75,6 +75,8 @@ describe('test', function () {
                 var conf = disconf.util.reloadConfig();
                 expect(data).not.to.be(null);
                 expect(conf).not.to.be(null);
+                expect(data.a).to.be(1);
+                expect(data.b).to.be(2);
                 done();
             });
         });
